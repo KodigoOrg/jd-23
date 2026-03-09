@@ -41,7 +41,7 @@ public class ProductoService {
             throw new EntityNotFoundException("Producto con id " + id + " no encontrado");
         }
         Producto updated = new Producto(id, request.nombre(), request.precio(), request.stock());
-        Producto saved = repository.update(updated);
+        Producto saved = repository.save(updated);
         return toResponseDto(saved);
     }
 
