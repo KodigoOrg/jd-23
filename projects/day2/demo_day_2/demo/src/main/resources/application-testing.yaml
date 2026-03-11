@@ -1,0 +1,21 @@
+# =====================================================================
+# PERFIL: testing
+# Uso recomendado: pruebas automatizadas / integracion.
+# =====================================================================
+spring:
+  datasource:
+    # Base en memoria para pruebas aisladas y rapidas.
+    url: jdbc:h2:mem:productos_test;DB_CLOSE_DELAY=-1;MODE=PostgreSQL
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+
+  jpa:
+    # Reinicia el esquema para cada contexto de prueba.
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true

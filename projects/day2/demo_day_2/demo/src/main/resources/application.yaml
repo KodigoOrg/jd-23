@@ -1,50 +1,17 @@
 # =====================================================================
-# Configuracion principal de la API de Productos
+# Configuracion GLOBAL (aplica a todos los perfiles).
+# Los perfiles especificos viven en:
+#   - application-dev.yaml
+#   - application-prod.yaml
+#   - application-testing.yaml
 # =====================================================================
-# Las credenciales de base de datos se leen desde variables de entorno
-# para evitar exponer datos sensibles en el repositorio.
-#
-# Variables de entorno requeridas:
-#   DB_URL      - URL JDBC de conexion (tiene valor por defecto para Supabase)
-#   DB_USERNAME - Usuario de la base de datos (tiene valor por defecto)
-#   DB_PASSWORD - Contrasena de la base de datos (tiene valor por defecto)
-#
-# Ver .env.example para referencia de valores.
-# =====================================================================
-
 spring:
   application:
     name: productos-api
-
-  # --- Configuracion de DataSource (PostgreSQL en Supabase) ---
-  datasource:
-    url: ${DB_URL:jdbc:postgresql://aws-0-us-west-2.pooler.supabase.com:6543/postgres}
-    username: ${DB_USERNAME:postgres.wczdgaujomnojlszzvhy}
-    password: ${DB_PASSWORD:Contrasenia123}
-    driver-class-name: org.postgresql.Driver
-
-    # Pool de conexiones HikariCP (valores conservadores para Supabase free tier)
-    hikari:
-      maximum-pool-size: 5
-      minimum-idle: 2
-      connection-timeout: 20000
-
-  # --- Configuracion de JPA / Hibernate ---
-  jpa:
-    hibernate:
-      # 'update' crea/modifica tablas automaticamente segun las entidades.
-      # En produccion considerar cambiar a 'validate' y usar migraciones (Flyway/Liquibase).
-      ddl-auto: update
-    # Activa logs SQL para observar consultas lazy loading y joins en la practica.
-    show-sql: true
-    open-in-view: false
-    properties:
-      hibernate:
-        format_sql: true
+  profiles:
+    # Si no se especifica profile al arrancar, se usa "dev".
+    # Ejemplo: java -jar app.jar --spring.profiles.active=prod
+    default: dev
 
 server:
   port: 8080
-
-logging:
-  level:
-    org.hibernate.SQL: debug

@@ -1,0 +1,30 @@
+# =====================================================================
+# PERFIL: prod
+# Uso recomendado: despliegues reales (servidor/produccion).
+# =====================================================================
+spring:
+  datasource:
+    # En prod NO se dejan valores por defecto: deben venir por entorno.
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 15
+      minimum-idle: 5
+      connection-timeout: 20000
+
+  jpa:
+    # En prod evitamos cambios automaticos de esquema.
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: false
+
+logging:
+  level:
+    root: info
+    org.hibernate.SQL: warn
