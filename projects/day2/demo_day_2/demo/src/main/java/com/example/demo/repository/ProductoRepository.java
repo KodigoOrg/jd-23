@@ -4,6 +4,8 @@ import com.example.demo.domain.Producto;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+
 /**
  * Repositorio JPA para la entidad {@link Producto}.
  * <p>
@@ -17,4 +19,10 @@ import org.springframework.stereotype.Repository;
  */
 @Repository
 public interface ProductoRepository extends JpaRepository<Producto, Long> {
+
+    List<Producto> findByNombreContainingIgnoreCase(String nombre);
+
+    List<Producto> findByUsuarioId(Long usuarioId);
+
+    List<Producto> findByNombreContainingIgnoreCaseAndUsuarioId(String nombre, Long usuarioId);
 }

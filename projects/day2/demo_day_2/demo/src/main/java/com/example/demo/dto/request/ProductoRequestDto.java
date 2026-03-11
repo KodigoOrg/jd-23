@@ -14,6 +14,9 @@ public record ProductoRequestDto(
 
         @NotNull(message = "El stock es obligatorio")
         @Min(value = 0, message = "El stock debe ser mayor o igual a 0")
-        Integer stock
+        Integer stock,
+
+        @NotNull(message = "El usuarioId es obligatorio")
+        Long usuarioId
 ) {
 }

@@ -1,5 +1,6 @@
 package com.example.demo.controller;
 
+import com.example.demo.dto.request.ProductoPatchRequestDto;
 import com.example.demo.dto.request.ProductoRequestDto;
 import com.example.demo.dto.response.ProductoResponseDto;
 import com.example.demo.exception.ErrorResponse;
@@ -82,5 +83,46 @@ public class ProductoController {
     public ResponseEntity<Void> eliminar(@PathVariable Long id) {
         service.eliminar(id);
         return ResponseEntity.noContent().build();
+    }
+
+    // =====================================================================
+    // DEMOS: Extracción de datos — @PathVariable, @RequestParam, @RequestBody
+    // =====================================================================
+
+    @Operation(summary = "Obtener stock de un producto por ID",
+            description = "Ejemplo de @PathVariable: extrae el {id} de la URI /api/productos/{id}/stock")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Stock obtenido"),
+            @ApiResponse(responseCode = "404", description = "Producto no encontrado",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    @GetMapping("/{id}/stock")
+    public ResponseEntity<Integer> obtenerStock(@PathVariable Long id) {
+        return ResponseEntity.ok(service.obtenerStock(id));
+    }
+
+    @Operation(summary = "Buscar productos por nombre",
+            description = "Ejemplo de @RequestParam: extrae 'nombre' del query string ?nombre=mesa")
+    @ApiResponse(responseCode = "200", description = "Resultados de búsqueda obtenidos")
+    @GetMapping("/buscar")
+    public ResponseEntity<List<ProductoResponseDto>> buscarPorNombre(
+            @RequestParam String nombre) {
+        return ResponseEntity.ok(service.buscarPorNombre(nombre));
+    }
+
+    @Operation(summary = "Actualización parcial de un producto",
+            description = "Ejemplo de @RequestBody: extrae el JSON del body HTTP para actualización parcial (PATCH)")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Producto actualizado parcialmente"),
+            @ApiResponse(responseCode = "400", description = "Datos de entrada inválidos",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "Producto no encontrado",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    @PatchMapping("/{id}")
+    public ResponseEntity<ProductoResponseDto> actualizarParcial(
+            @PathVariable Long id,
+            @Valid @RequestBody ProductoPatchRequestDto request) {
+        return ResponseEntity.ok(service.actualizarParcial(id, request));
     }
 }

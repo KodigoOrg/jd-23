@@ -7,7 +7,7 @@
 # Variables de entorno requeridas:
 #   DB_URL      - URL JDBC de conexion (tiene valor por defecto para Supabase)
 #   DB_USERNAME - Usuario de la base de datos (tiene valor por defecto)
-#   DB_PASSWORD - Contrasena de la base de datos (OBLIGATORIA, sin default)
+#   DB_PASSWORD - Contrasena de la base de datos (tiene valor por defecto)
 #
 # Ver .env.example para referencia de valores.
 # =====================================================================
@@ -20,7 +20,7 @@ spring:
   datasource:
     url: ${DB_URL:jdbc:postgresql://aws-0-us-west-2.pooler.supabase.com:6543/postgres}
     username: ${DB_USERNAME:postgres.wczdgaujomnojlszzvhy}
-    password: ${DB_PASSWORD}
+    password: ${DB_PASSWORD:Contrasenia123}
     driver-class-name: org.postgresql.Driver
 
     # Pool de conexiones HikariCP (valores conservadores para Supabase free tier)
@@ -35,12 +35,16 @@ spring:
       # 'update' crea/modifica tablas automaticamente segun las entidades.
       # En produccion considerar cambiar a 'validate' y usar migraciones (Flyway/Liquibase).
       ddl-auto: update
-    show-sql: false
+    # Activa logs SQL para observar consultas lazy loading y joins en la practica.
+    show-sql: true
     open-in-view: false
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
 
 server:
   port: 8080
+
+logging:
+  level:
+    org.hibernate.SQL: debug
