@@ -12,6 +12,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -23,6 +25,8 @@ import java.util.List;
 @Tag(name = "Productos", description = "CRUD de productos en memoria")
 public class ProductoController {
 
+    private static final Logger log = LoggerFactory.getLogger(ProductoController.class);
+
     private final ProductoService service;
 
     public ProductoController(ProductoService service) {
@@ -33,6 +37,7 @@ public class ProductoController {
     @ApiResponse(responseCode = "200", description = "Lista de productos obtenida")
     @GetMapping
     public ResponseEntity<List<ProductoResponseDto>> listarTodos() {
+        log.debug("GET /api/productos - listar todos");
         return ResponseEntity.ok(service.listarTodos());
     }
 
@@ -44,6 +49,7 @@ public class ProductoController {
     })
     @GetMapping("/{id}")
     public ResponseEntity<ProductoResponseDto> obtenerPorId(@PathVariable Long id) {
+        log.debug("GET /api/productos/{} - obtener por id", id);
         return ResponseEntity.ok(service.obtenerPorId(id));
     }
 
@@ -55,6 +61,7 @@ public class ProductoController {
     })
     @PostMapping
     public ResponseEntity<ProductoResponseDto> crear(@Valid @RequestBody ProductoRequestDto request) {
+        log.info("POST /api/productos - crear producto {}", request.nombre());
         ProductoResponseDto created = service.crear(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
@@ -70,6 +77,7 @@ public class ProductoController {
     @PutMapping("/{id}")
     public ResponseEntity<ProductoResponseDto> actualizar(@PathVariable Long id,
                                                           @Valid @RequestBody ProductoRequestDto request) {
+        log.info("PUT /api/productos/{} - actualizar producto", id);
         return ResponseEntity.ok(service.actualizar(id, request));
     }
 
@@ -81,6 +89,7 @@ public class ProductoController {
     })
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminar(@PathVariable Long id) {
+        log.info("DELETE /api/productos/{} - eliminar producto", id);
         service.eliminar(id);
         return ResponseEntity.noContent().build();
     }
@@ -98,6 +107,7 @@ public class ProductoController {
     })
     @GetMapping("/{id}/stock")
     public ResponseEntity<Integer> obtenerStock(@PathVariable Long id) {
+        log.debug("GET /api/productos/{}/stock - consultar stock", id);
         return ResponseEntity.ok(service.obtenerStock(id));
     }
 
@@ -107,6 +117,7 @@ public class ProductoController {
     @GetMapping("/buscar")
     public ResponseEntity<List<ProductoResponseDto>> buscarPorNombre(
             @RequestParam String nombre) {
+        log.debug("GET /api/productos/buscar - nombre={}", nombre);
         return ResponseEntity.ok(service.buscarPorNombre(nombre));
     }
 
@@ -123,6 +134,7 @@ public class ProductoController {
     public ResponseEntity<ProductoResponseDto> actualizarParcial(
             @PathVariable Long id,
             @Valid @RequestBody ProductoPatchRequestDto request) {
+        log.info("PATCH /api/productos/{} - actualización parcial", id);
         return ResponseEntity.ok(service.actualizarParcial(id, request));
     }
 }

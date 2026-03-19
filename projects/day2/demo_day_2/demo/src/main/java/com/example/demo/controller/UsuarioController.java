@@ -14,6 +14,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -25,6 +27,8 @@ import java.util.List;
 @Tag(name = "Usuarios", description = "CRUD de usuarios")
 public class UsuarioController {
 
+    private static final Logger log = LoggerFactory.getLogger(UsuarioController.class);
+
     private final UsuarioService service;
 
     public UsuarioController(UsuarioService service) {
@@ -35,6 +39,7 @@ public class UsuarioController {
     @ApiResponse(responseCode = "200", description = "Lista de usuarios obtenida")
     @GetMapping
     public ResponseEntity<List<UsuarioResponseDto>> listarTodos() {
+        log.debug("GET /api/usuarios - listar todos");
         return ResponseEntity.ok(service.listarTodos());
     }
 
@@ -46,6 +51,7 @@ public class UsuarioController {
     })
     @GetMapping("/{id}")
     public ResponseEntity<UsuarioResponseDto> obtenerPorId(@PathVariable Long id) {
+        log.debug("GET /api/usuarios/{} - obtener por id", id);
         return ResponseEntity.ok(service.obtenerPorId(id));
     }
 
@@ -57,6 +63,7 @@ public class UsuarioController {
     })
     @PostMapping
     public ResponseEntity<UsuarioResponseDto> crear(@Valid @RequestBody UsuarioRequestDto request) {
+        log.info("POST /api/usuarios - crear usuario {}", request.email());
         UsuarioResponseDto created = service.crear(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
@@ -72,6 +79,7 @@ public class UsuarioController {
     @PutMapping("/{id}")
     public ResponseEntity<UsuarioResponseDto> actualizar(@PathVariable Long id,
                                                          @Valid @RequestBody UsuarioRequestDto request) {
+        log.info("PUT /api/usuarios/{} - actualizar usuario", id);
         return ResponseEntity.ok(service.actualizar(id, request));
     }
 
@@ -86,6 +94,7 @@ public class UsuarioController {
     @PatchMapping("/{id}")
     public ResponseEntity<UsuarioResponseDto> actualizarParcial(@PathVariable Long id,
                                                                 @Valid @RequestBody UsuarioPatchRequestDto request) {
+        log.info("PATCH /api/usuarios/{} - actualización parcial", id);
         return ResponseEntity.ok(service.actualizarParcial(id, request));
     }
 
@@ -97,6 +106,7 @@ public class UsuarioController {
     })
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminar(@PathVariable Long id) {
+        log.info("DELETE /api/usuarios/{} - eliminar usuario", id);
         service.eliminar(id);
         return ResponseEntity.noContent().build();
     }
@@ -105,6 +115,7 @@ public class UsuarioController {
     @ApiResponse(responseCode = "200", description = "Resultados obtenidos")
     @GetMapping("/buscar")
     public ResponseEntity<List<UsuarioResponseDto>> buscarPorNombre(@RequestParam String nombre) {
+        log.debug("GET /api/usuarios/buscar - nombre={}", nombre);
         return ResponseEntity.ok(service.buscarPorNombre(nombre));
     }
 
@@ -116,6 +127,7 @@ public class UsuarioController {
     })
     @GetMapping("/buscar-por-email")
     public ResponseEntity<UsuarioResponseDto> buscarPorEmail(@RequestParam String email) {
+        log.debug("GET /api/usuarios/buscar-por-email - email={}", email);
         return ResponseEntity.ok(service.buscarPorEmail(email));
     }
 
@@ -127,6 +139,7 @@ public class UsuarioController {
     })
     @GetMapping("/{id}/productos")
     public ResponseEntity<List<ProductoResponseDto>> listarProductosPorUsuario(@PathVariable Long id) {
+        log.debug("GET /api/usuarios/{}/productos - listar productos", id);
         return ResponseEntity.ok(service.listarProductosPorUsuario(id));
     }
 
@@ -138,6 +151,7 @@ public class UsuarioController {
     })
     @GetMapping("/{id}/con-productos")
     public ResponseEntity<UsuarioConProductosResponseDto> obtenerUsuarioConProductos(@PathVariable Long id) {
+        log.debug("GET /api/usuarios/{}/con-productos - obtener usuario con productos", id);
         return ResponseEntity.ok(service.obtenerUsuarioConProductos(id));
     }
 }
