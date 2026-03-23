@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <!-- section: head -->
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Live Chat</title>
+
+    <!-- SockJS and STOMP client libraries loaded from WebJar CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+
+    <style>
+        /* Reset and base */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background: #0f172a;
+            color: #e2e8f0;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+        }
+
+        /* section: top header bar */
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.85rem 1.25rem;
+            background: #1e293b;
+            border-bottom: 1px solid #334155;
+            flex-shrink: 0;
+        }
+
+        .header__icon { font-size: 1.4rem; }
+
+        .header__title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #f1f5f9;
+        }
+
+        .header__user {
+            margin-left: auto;
+            font-size: 0.85rem;
+            color: #94a3b8;
+        }
+
+        .header__badge {
+            background: #6366f1;
+            color: #fff;
+            padding: 0.15rem 0.55rem;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.8rem;
+        }
+
+        /* section: message list area */
+        .messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+            scroll-behavior: smooth;
+        }
+
+        /* Regular chat bubble */
+        .msg {
+            max-width: 70%;
+            padding: 0.45rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.93rem;
+            line-height: 1.45;
+            word-break: break-word;
+        }
+
+        /* Messages from the current user */
+        .msg--own {
+            align-self: flex-end;
+            background: #4f46e5;
+            color: #fff;
+            border-bottom-right-radius: 4px;
+        }
+
+        /* Messages from other users */
+        .msg--other {
+            align-self: flex-start;
+            background: #1e293b;
+            color: #e2e8f0;
+            border-bottom-left-radius: 4px;
+        }
+
+        .msg__meta {
+            font-size: 0.72rem;
+            opacity: 0.65;
+            margin-bottom: 0.15rem;
+        }
+
+        /* System events (JOIN / LEAVE) */
+        .msg--system {
+            align-self: center;
+            font-size: 0.8rem;
+            font-style: italic;
+            color: #64748b;
+            background: none;
+            padding: 0.2rem 0;
+        }
+
+        /* section: input area */
+        .input-bar {
+            display: flex;
+            gap: 0.5rem;
+            padding: 0.75rem 1.25rem;
+            background: #1e293b;
+            border-top: 1px solid #334155;
+            flex-shrink: 0;
+        }
+
+        .input-bar__field {
+            flex: 1;
+            padding: 0.65rem 1rem;
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            color: #e2e8f0;
+            font-size: 0.95rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .input-bar__field::placeholder { color: #475569; }
+        .input-bar__field:focus { border-color: #6366f1; }
+
+        .input-bar__btn {
+            padding: 0.65rem 1.25rem;
+            background: #6366f1;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .input-bar__btn:hover { background: #4f46e5; }
+        .input-bar__btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        /* Scrollbar styling */
+        .messages::-webkit-scrollbar { width: 5px; }
+        .messages::-webkit-scrollbar-track { background: transparent; }
+        .messages::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+    </style>
+</head>
+<body>
+
+<!-- section: header -->
+<header class="header">
+    <span class="header__icon">&#128172;</span>
+    <span class="header__title">Live Chat</span>
+    <span class="header__user">
+        Logged in as <span class="header__badge" th:text="${username}">User</span>
+    </span>
+</header>
+
+<!-- section: message list -->
+<div class="messages" id="messageArea">
+    <!-- Messages are injected here by JavaScript -->
+</div>
+
+<!-- section: input area -->
+<div class="input-bar">
+    <input
+        type="text"
+        id="messageInput"
+        class="input-bar__field"
+        placeholder="Type a message..."
+        maxlength="2048"
+        autocomplete="off"
+    />
+    <button id="sendBtn" class="input-bar__btn" disabled>Send</button>
+</div>
+
+<!-- section: websocket script -->
+<!--
+    Thymeleaf inlines the server-side username into a JS variable so the
+    client can identify its own messages without a separate API call.
+-->
+<script th:inline="javascript">
+    /*[- WebSocket / STOMP chat client -]*/
+
+    /* ── Constants ────────────────────────────────────────────────────────── */
+    // Username injected by Thymeleaf at render time.
+    const CURRENT_USER = /*[[${username}]]*/ 'Anonymous';
+
+    const messageArea  = document.getElementById('messageArea');
+    const messageInput = document.getElementById('messageInput');
+    const sendBtn      = document.getElementById('sendBtn');
+
+    let stompClient = null; // Holds the active STOMP client once connected.
+
+    /* ── Helper: format timestamp ─────────────────────────────────────────── */
+    function formatTime(isoString) {
+        if (!isoString) return '';
+        const d = new Date(isoString);
+        return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
+    /* ── Helper: append a message element to the chat area ───────────────── */
+    function appendMessage(msg) {
+        const area = messageArea;
+
+        if (msg.type === 'CHAT') {
+            /*
+             * Regular chat bubble. Own messages appear on the right (msg--own),
+             * messages from others appear on the left (msg--other).
+             */
+            const isOwn  = msg.sender === CURRENT_USER;
+            const bubble = document.createElement('div');
+            bubble.className = 'msg ' + (isOwn ? 'msg--own' : 'msg--other');
+
+            const meta = document.createElement('div');
+            meta.className = 'msg__meta';
+            meta.textContent = (isOwn ? 'You' : msg.sender) + '  ' + formatTime(msg.timestamp);
+
+            const text = document.createElement('div');
+            text.textContent = msg.content;
+
+            bubble.appendChild(meta);
+            bubble.appendChild(text);
+            area.appendChild(bubble);
+
+        } else {
+            /*
+             * System event (JOIN or LEAVE). Shown as a single centered italic
+             * line so it does not visually compete with chat messages.
+             */
+            const sys = document.createElement('div');
+            sys.className = 'msg msg--system';
+            const action = msg.type === 'JOIN' ? 'joined' : 'left';
+            sys.textContent = msg.sender + ' ' + action + ' the chat';
+            area.appendChild(sys);
+        }
+
+        // Always scroll to the bottom after adding a new message.
+        area.scrollTop = area.scrollHeight;
+    }
+
+    /* ── Step 1: Load chat history via REST before WebSocket connects ─────── */
+    /*
+     * Fetching history over REST (GET /api/messages) is faster than waiting
+     * for the WebSocket handshake + STOMP connect + subscribe cycle to complete.
+     * This means the user sees past messages immediately on page load.
+     */
+    fetch('/api/messages')
+        .then(res => res.json())
+        .then(messages => {
+            messages.forEach(appendMessage);
+        })
+        .catch(err => console.error('Failed to load chat history:', err));
+
+    /* ── Step 2: Connect via SockJS + STOMP ──────────────────────────────── */
+    /*
+     * SockJS provides the transport layer (WebSocket with HTTP fallbacks).
+     * Stomp.over() wraps it in the STOMP protocol for structured messaging.
+     */
+    function connect() {
+        const socket = new SockJS('/chat-ws');
+        stompClient  = Stomp.over(socket);
+
+        // Suppress the verbose STOMP debug log in the browser console.
+        stompClient.debug = null;
+
+        /*
+         * onConnect callback — fires when the STOMP CONNECTED frame is received.
+         * At this point it is safe to subscribe and send frames.
+         */
+        stompClient.connect({}, function onConnect() {
+            /*
+             * Subscribe to /topic/public to receive all broadcast messages.
+             * Every message sent to this topic by the server is passed to
+             * appendMessage for rendering.
+             */
+            stompClient.subscribe('/topic/public', function onMessage(frame) {
+                const msg = JSON.parse(frame.body);
+                appendMessage(msg);
+            });
+
+            /*
+             * Send a JOIN event so all other connected users know this person
+             * entered the chat room. The server persists this event and
+             * broadcasts it to /topic/public.
+             */
+            stompClient.send('/app/chat.addUser', {}, JSON.stringify({
+                sender: CURRENT_USER,
+                type:   'JOIN'
+            }));
+
+            // Enable the send button only after a successful connection.
+            sendBtn.disabled = false;
+        });
+    }
+
+    /* ── Step 3: Send a message ───────────────────────────────────────────── */
+    function sendMessage() {
+        const text = messageInput.value.trim();
+        if (!text || !stompClient || !stompClient.connected) return;
+
+        stompClient.send('/app/chat.sendMessage', {}, JSON.stringify({
+            sender:  CURRENT_USER,
+            content: text,
+            type:    'CHAT'
+        }));
+
+        // Clear the input after sending.
+        messageInput.value = '';
+    }
+
+    /* ── Event listeners ──────────────────────────────────────────────────── */
+    sendBtn.addEventListener('click', sendMessage);
+
+    // Allow sending with the Enter key; Shift+Enter is reserved for newlines
+    // if the field were a textarea in the future.
+    messageInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage();
+        }
+    });
+
+    /* ── Step 4: Clean disconnect on page close ───────────────────────────── */
+    /*
+     * onbeforeunload fires when the tab or window is about to be closed.
+     * We send a LEAVE event so other participants are notified, then
+     * disconnect the STOMP session cleanly to free server resources.
+     * Note: the browser may not complete the send if the page unloads very
+     * quickly; this is a best-effort notification.
+     */
+    window.onbeforeunload = function() {
+        if (stompClient && stompClient.connected) {
+            stompClient.send('/app/chat.addUser', {}, JSON.stringify({
+                sender: CURRENT_USER,
+                type:   'LEAVE'
+            }));
+            stompClient.disconnect();
+        }
+    };
+
+    /* ── Kick off the connection ──────────────────────────────────────────── */
+    connect();
+</script>
+
+</body>
+</html>
