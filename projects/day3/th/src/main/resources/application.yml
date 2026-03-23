@@ -1,0 +1,82 @@
+# ──────────────────────────────────────────────────────────────────────────────
+# Shared / default configuration — active regardless of the active profile.
+# Profile-specific files (application-dev.yml, application-prod.yml) or
+# Spring's three-dashes separator below override individual keys as needed.
+# ──────────────────────────────────────────────────────────────────────────────
+
+spring:
+  application:
+    name: chat-app
+
+  datasource:
+    # H2 in-memory database. DB_CLOSE_DELAY=-1 keeps the database alive as long
+    # as the JVM is running. DB_CLOSE_ON_EXIT=FALSE prevents H2 from shutting
+    # down when the last connection is released (important for JPA connection pools).
+    url: jdbc:h2:mem:chatdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    # Empty password is the H2 default; leave blank for local/dev use.
+    password:
+
+  jpa:
+    hibernate:
+      # 'update' creates/alters tables automatically on startup without
+      # dropping existing data. Switch to 'validate' in prod if using a
+      # persistent database to catch schema drift at deploy time.
+      ddl-auto: update
+    # SQL logging is OFF by default to keep logs clean in production.
+    show-sql: false
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Profile: dev
+# Activate with: --spring.profiles.active=dev
+# Enables the H2 web console and verbose SQL logging for local development.
+# ──────────────────────────────────────────────────────────────────────────────
+---
+spring:
+  config:
+    activate:
+      on-profile: dev
+
+  h2:
+    console:
+      # Browse the in-memory database at http://localhost:8080/h2-console
+      # JDBC URL: jdbc:h2:mem:chatdb  |  User: sa  |  Password: (empty)
+      enabled: true
+      path: /h2-console
+
+  jpa:
+    # Show generated SQL in the console to aid debugging during development.
+    show-sql: true
+
+server:
+  port: 8080
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Profile: prod  (Azure App Service)
+# Activate with: SPRING_PROFILES_ACTIVE=prod environment variable on Azure.
+# PORT is injected by Azure App Service at runtime; fallback to 8080 locally.
+# ──────────────────────────────────────────────────────────────────────────────
+---
+spring:
+  config:
+    activate:
+      on-profile: prod
+
+  h2:
+    console:
+      # Disable the H2 console in production — it would expose the database
+      # to anyone who can reach the URL.
+      enabled: false
+
+server:
+  # Azure App Service sets the PORT environment variable dynamically.
+  # ${PORT:8080} reads the env var and falls back to 8080 if absent.
+  port: ${PORT:8080}
+
+logging:
+  level:
+    # Reduce noise in Azure Log Stream; only warnings and errors from
+    # the root logger, but INFO-level detail for application code.
+    root: WARN
+    chat: INFO
