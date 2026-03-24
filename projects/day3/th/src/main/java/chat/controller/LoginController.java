@@ -90,6 +90,29 @@ public class LoginController {
     }
 
     /**
+     * Logs out the current user by invalidating the HTTP session and redirecting
+     * to the login page.
+     *
+     * <p>Using {@code POST} (instead of {@code GET}) prevents accidental logouts
+     * triggered by prefetch or link previews. The chat template submits a hidden
+     * form to this endpoint when the user clicks the "Leave" button.
+     *
+     * <p>Invalidating the session removes the {@code "username"} attribute and all
+     * other session state, ensuring a clean slate for the next user on the same
+     * browser.
+     *
+     * @param session the current HTTP session to invalidate
+     * @return redirect to {@code /login}
+     */
+    @PostMapping("/logout")
+    public String logout(HttpSession session) {
+        // Destroy the session entirely rather than just removing the username
+        // attribute, so no other session-scoped state leaks to the next user.
+        session.invalidate();
+        return "redirect:/login";
+    }
+
+    /**
      * Renders the main chat page for authenticated users.
      *
      * <p>The username is added to the Thymeleaf model so the template can

@@ -57,6 +57,24 @@
             font-size: 0.8rem;
         }
 
+        .header__logout {
+            margin-left: 0.75rem;
+            padding: 0.3rem 0.75rem;
+            background: transparent;
+            color: #94a3b8;
+            border: 1px solid #334155;
+            border-radius: 6px;
+            font-size: 0.82rem;
+            cursor: pointer;
+            transition: background 0.15s, color 0.15s, border-color 0.15s;
+        }
+
+        .header__logout:hover {
+            background: #ef4444;
+            color: #fff;
+            border-color: #ef4444;
+        }
+
         /* section: message list area */
         .messages {
             flex: 1;
@@ -165,6 +183,16 @@
     <span class="header__user">
         Logged in as <span class="header__badge" th:text="${username}">User</span>
     </span>
+
+    <!--
+        Logout form — uses POST to avoid accidental logouts from link prefetch.
+        Sends a LEAVE event via JS before submitting so other users are notified.
+    -->
+    <form th:action="@{/logout}" method="post" id="logoutForm" style="margin:0">
+        <button type="button" class="header__logout" id="logoutBtn">
+            &#x2190; Leave
+        </button>
+    </form>
 </header>
 
 <!-- section: message list -->
@@ -321,6 +349,29 @@
     }
 
     /* ── Event listeners ──────────────────────────────────────────────────── */
+
+    /*
+     * Logout button: broadcast LEAVE to notify other users, disconnect the
+     * WebSocket cleanly, then POST to /logout so the server invalidates the
+     * session. Using setTimeout(150ms) gives the STOMP frame time to flush
+     * before the connection is torn down.
+     */
+    document.getElementById('logoutBtn').addEventListener('click', function() {
+        if (stompClient && stompClient.connected) {
+            stompClient.send('/app/chat.addUser', {}, JSON.stringify({
+                sender: CURRENT_USER,
+                type:   'LEAVE'
+            }));
+            setTimeout(function() {
+                stompClient.disconnect(function() {
+                    document.getElementById('logoutForm').submit();
+                });
+            }, 150);
+        } else {
+            document.getElementById('logoutForm').submit();
+        }
+    });
+
     sendBtn.addEventListener('click', sendMessage);
 
     // Allow sending with the Enter key; Shift+Enter is reserved for newlines
