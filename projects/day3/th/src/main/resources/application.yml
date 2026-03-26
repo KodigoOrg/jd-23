@@ -74,6 +74,7 @@ server:
   # ${PORT:8080} reads the env var and falls back to 8080 if absent.
   port: ${PORT:8080}
 
+# Formato de consola y niveles por paquete: ver logback-spring.xml (perfil prod).
 logging:
   level:
     # Reduce noise in Azure Log Stream; only warnings and errors from

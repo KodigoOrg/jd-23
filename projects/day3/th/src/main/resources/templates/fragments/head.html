@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <!--
+        Reusable <head> fragment.
+        Usage:  <th:block th:replace="~{fragments/head :: base(title='Page Title', css='/css/page.css')}"/>
+
+        Parameters:
+          title — text content of <title>
+          css   — context-relative path to the page-specific stylesheet
+    -->
+    <th:block th:fragment="base(title, css)">
+        <meta charset="UTF-8"/>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+        <title th:text="${title}">App</title>
+        <link rel="stylesheet" th:href="@{${css}}"/>
+    </th:block>
+</head>
+</html>

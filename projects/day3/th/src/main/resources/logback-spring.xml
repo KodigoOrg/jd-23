@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Logback para Spring Boot: consola con formato distinto en prod (UTC, sin colores,
+  apto para Azure Log Stream / agregadores) y en no-prod (más legible en local).
+
+  Niveles típicos en producción:
+  - root WARN: menos ruido de librerías
+  - chat INFO: eventos de negocio (login, logout, errores explícitos)
+  - Spring Web / servlet: INFO para trazas HTTP útiles; DispatcherServlet en WARN
+  - Hibernate / SQL: WARN (sin SQL en consola salvo que se suba el nivel)
+-->
+<configuration>
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+    <springProperty name="APP_NAME" source="spring.application.name" defaultValue="app"/>
+
+    <!-- Perfil prod: salida estable para observabilidad (timestamp UTC ISO-8601). -->
+    <springProfile name="prod">
+        <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder>
+                <pattern>%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX,UTC} %-5level [${APP_NAME}] [%thread] %logger{36} - %msg%n%wEx</pattern>
+                <charset>UTF-8</charset>
+            </encoder>
+        </appender>
+
+        <root level="WARN">
+            <appender-ref ref="CONSOLE"/>
+        </root>
+
+        <logger name="chat" level="INFO"/>
+        <logger name="org.springframework.web" level="INFO"/>
+        <logger name="org.springframework.web.servlet.DispatcherServlet" level="WARN"/>
+        <logger name="org.springframework.web.socket" level="INFO"/>
+        <logger name="org.hibernate" level="WARN"/>
+        <logger name="org.hibernate.SQL" level="WARN"/>
+        <logger name="org.hibernate.orm.jdbc.bind" level="WARN"/>
+        <logger name="org.springframework.orm.jpa" level="WARN"/>
+    </springProfile>
+
+    <!-- Desarrollo / default: consola con colores (patrón de Spring Boot). -->
+    <springProfile name="!prod">
+        <include resource="org/springframework/boot/logging/logback/console-appender.xml"/>
+
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+        </root>
+
+        <logger name="chat" level="DEBUG"/>
+        <logger name="org.springframework.web" level="INFO"/>
+        <logger name="org.hibernate.SQL" level="WARN"/>
+    </springProfile>
+</configuration>

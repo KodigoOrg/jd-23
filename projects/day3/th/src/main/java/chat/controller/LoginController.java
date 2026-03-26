@@ -1,6 +1,8 @@
 package chat.controller;
 
 import jakarta.servlet.http.HttpSession;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -23,6 +25,8 @@ import org.springframework.web.bind.annotation.RequestParam;
  */
 @Controller
 public class LoginController {
+
+    private static final Logger log = LoggerFactory.getLogger(LoginController.class);
 
     /** Session attribute key used to store and look up the username. */
     private static final String SESSION_USERNAME = "username";
@@ -80,12 +84,14 @@ public class LoginController {
         // guard server-side to handle direct POST requests.
         String trimmed = username.trim();
         if (trimmed.isEmpty()) {
+            log.debug("Login rechazado: nombre de usuario vacío");
             return "redirect:/login";
         }
 
         // Store the cleaned-up username in the session. Any subsequent request
         // within this session can retrieve it with session.getAttribute("username").
         session.setAttribute(SESSION_USERNAME, trimmed);
+        log.info("Sesión iniciada: usuario={}", trimmed);
         return "redirect:/chat";
     }
 
@@ -109,6 +115,7 @@ public class LoginController {
         // Destroy the session entirely rather than just removing the username
         // attribute, so no other session-scoped state leaks to the next user.
         session.invalidate();
+        log.info("Sesión cerrada (logout)");
         return "redirect:/login";
     }
 
